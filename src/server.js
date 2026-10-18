@@ -29,6 +29,7 @@ const startServer = async () => {
       });
     };
 
+    process.once('SIGUSR2', () => handleShutdown('SIGUSR2'));
     process.on('SIGTERM', () => handleShutdown('SIGTERM'));
     process.on('SIGINT', () => handleShutdown('SIGINT'));
   } catch (error) {

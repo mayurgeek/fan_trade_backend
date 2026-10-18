@@ -8,6 +8,12 @@ module.exports = {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432', 10),
     dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    },
     logging: false,
     pool: {
       max: 10,
@@ -23,6 +29,12 @@ module.exports = {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432', 10),
     dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    },
     logging: false,
   },
   production: {
@@ -32,6 +44,12 @@ module.exports = {
     host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT || '5432', 10),
     dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    },
     logging: false,
     pool: {
       max: 20,
