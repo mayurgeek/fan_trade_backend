@@ -14,8 +14,8 @@ async function runTests() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      email: 'aerovort@viralcatalogs.com',
-      password: 'password123'
+      email: 'mahalaxami@mailinator.com',
+      password: '12345678'
     })
   });
   const wLoginData = await wLoginRes.json();
@@ -57,7 +57,7 @@ async function runTests() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      email: 'pooja.electricals@gmail.com',
+      email: 'pooja.electricals@mailinator.com',
       password: 'password123'
     })
   });
@@ -85,7 +85,7 @@ async function runTests() {
   const enquiryPayload = {
     channel: 'email',
     name: 'Pooja Sharma',
-    email: 'pooja.electricals@gmail.com',
+    email: 'pooja.electricals@mailinator.com',
     phone: '+91 98765 43210',
     address: 'Shop 14, Bajirao Road, Pune, MH',
     message: 'Seeking bulk dealer pricing for 25 units of Typhoon BLDC fans with shipping to Pune warehouse.',
@@ -147,7 +147,7 @@ async function runTests() {
     body: JSON.stringify({
       channel: 'whatsapp',
       name: 'Pooja Sharma',
-      email: 'pooja.electricals@gmail.com',
+      email: 'pooja.electricals@mailinator.com',
       phone: '+91 98765 43210',
       items: [{ productId: breezeProduct.id, quantity: 10 }]
     })
@@ -166,7 +166,7 @@ async function runTests() {
     body: JSON.stringify({
       channel: 'whatsapp',
       name: 'Pooja Sharma',
-      email: 'pooja.electricals@gmail.com',
+      email: 'pooja.electricals@mailinator.com',
       phone: '+91 98765 43210',
       address: 'Shop 14, Bajirao Road, Pune',
       message: 'Can you deliver within 3 days?',
