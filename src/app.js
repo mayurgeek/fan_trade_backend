@@ -12,20 +12,57 @@ const config = require('./config');
 
 const app = express();
 
-//Security HTTP headers with cross-origin resource policy for uploaded images
+// Trust reverse proxies (Render, Cloudflare, AWS ALB) for secure cookies and protocol detection
+app.set('trust proxy', 1);
+
+// Security HTTP headers with cross-origin resource policy for uploaded images
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
 
-//CORS configuration limited to client origin with credentials //config.clientUrl
+// Determine allowed CORS origins (support multiple URLs, strip trailing slashes, allow onrender.com)
+const rawClientUrls = (process.env.CLIENT_URL || config.clientUrl || '').split(',');
+const allowedOrigins = new Set(
+  [
+    ...rawClientUrls,
+    'https://fan-trade-frontend.onrender.com',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ]
+    .map((url) => url && url.trim().replace(/\/+$/, ''))
+    .filter(Boolean)
+);
+
 app.use(
   cors({
-    origin: config.clientUrl,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+
+      const normalized = origin.trim().replace(/\/+$/, '');
+      if (
+        allowedOrigins.has(normalized) ||
+        normalized.endsWith('.onrender.com') ||
+        config.env !== 'production'
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'x-access-token',
+      'x-refresh-token',
+    ],
+    exposedHeaders: ['Set-Cookie'],
   })
 );
 

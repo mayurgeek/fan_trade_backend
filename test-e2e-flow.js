@@ -39,7 +39,7 @@ async function runTests() {
   const categoriesList = catsData.data.categories || [];
   const categoryWithProducts = categoriesList.find(c => (c.product_count || c.ProductCount || 0) > 0 || c.name.includes('BLDC'));
   console.log(`✓ Test 4a: Found Category '${categoryWithProducts.name}' (ID: ${categoryWithProducts.id})`);
-  
+
   const delRes = await fetch(`${BASE_URL}/wholesaler/categories/${categoryWithProducts.id}`, {
     method: 'DELETE',
     headers: wHeaders

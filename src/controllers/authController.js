@@ -3,76 +3,100 @@ const { sendSuccess } = require('../utils/responseFormatter');
 const asyncWrapper = require('../utils/asyncWrapper');
 const config = require('../config');
 
-const setAuthCookies = (res, tokens) => {
-  const isProd = config.env === 'production';
+const setAuthCookies = (res, tokens, req) => {
+  const isSecure =
+    config.env === 'production' ||
+    process.env.NODE_ENV === 'production' ||
+    Boolean(req && (req.secure || req.headers?.['x-forwarded-proto'] === 'https'));
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isSecure,
+    sameSite: isSecure ? 'none' : 'lax',
+    path: '/',
+  };
 
   res.cookie('access_token', tokens.accessToken, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',
+    ...cookieOptions,
     maxAge: 15 * 60 * 1000, // 15 mins
   });
 
   res.cookie('refresh_token', tokens.refreshToken, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',
+    ...cookieOptions,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/',
   });
 };
 
-const clearAuthCookies = (res) => {
-  const isProd = config.env === 'production';
-  res.clearCookie('access_token', {
+const clearAuthCookies = (res, req) => {
+  const isSecure =
+    config.env === 'production' ||
+    process.env.NODE_ENV === 'production' ||
+    Boolean(req && (req.secure || req.headers?.['x-forwarded-proto'] === 'https'));
+
+  const cookieOptions = {
     httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',
-  });
-  res.clearCookie('refresh_token', {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',
+    secure: isSecure,
+    sameSite: isSecure ? 'none' : 'lax',
     path: '/',
-  });
+  };
+
+  res.clearCookie('access_token', cookieOptions);
+  res.clearCookie('refresh_token', cookieOptions);
 };
 
 const register = asyncWrapper(async (req, res) => {
   const { user, tokens } = await authService.register(req.body);
-  setAuthCookies(res, tokens);
+  setAuthCookies(res, tokens, req);
   return sendSuccess(res, {
     statusCode: 201,
     message: 'Registration successful',
-    data: { user, accessToken: tokens.accessToken },
+    data: {
+      user,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    },
   });
 });
 
 const login = asyncWrapper(async (req, res) => {
   const { user, tokens } = await authService.login(req.body);
-  setAuthCookies(res, tokens);
+  setAuthCookies(res, tokens, req);
   return sendSuccess(res, {
     message: 'Login successful',
-    data: { user, accessToken: tokens.accessToken },
+    data: {
+      user,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    },
   });
 });
 
 const refresh = asyncWrapper(async (req, res) => {
-  const refreshToken = req.cookies.refresh_token || req.body.refreshToken;
-  console.log('================', refreshToken);
+  const refreshToken =
+    req.cookies?.refresh_token ||
+    req.body?.refreshToken ||
+    req.headers?.['x-refresh-token'];
   const { user, tokens } = await authService.refresh(refreshToken);
-  setAuthCookies(res, tokens);
+  setAuthCookies(res, tokens, req);
   return sendSuccess(res, {
     message: 'Token refreshed successfully',
-    data: { user, accessToken: tokens.accessToken },
+    data: {
+      user,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    },
   });
 });
 
 const logout = asyncWrapper(async (req, res) => {
-  const refreshToken = req.cookies.refresh_token || req.body.refreshToken;
+  const refreshToken =
+    req.cookies?.refresh_token ||
+    req.body?.refreshToken ||
+    req.headers?.['x-refresh-token'];
   if (req.user) {
     await authService.logout(req.user.id, refreshToken);
   }
-  clearAuthCookies(res);
+  clearAuthCookies(res, req);
   return sendSuccess(res, {
     message: 'Logged out successfully',
   });

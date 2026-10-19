@@ -3,20 +3,33 @@ const { User, WholesalerProfile } = require('../models');
 const ApiError = require('../utils/apiError');
 const config = require('../config');
 
+const extractToken = (req) => {
+  if (
+    req.headers?.authorization &&
+    req.headers.authorization.toLowerCase().startsWith('bearer ')
+  ) {
+    const parts = req.headers.authorization.split(' ');
+    if (parts.length >= 2 && parts[1]) {
+      return parts.slice(1).join(' ').trim();
+    }
+  }
+
+  if (req.headers?.['x-access-token']) {
+    return String(req.headers['x-access-token']).trim();
+  }
+
+  if (req.cookies && req.cookies.access_token) {
+    return String(req.cookies.access_token).trim();
+  }
+
+  return null;
+};
+
 const authenticate = async (req, res, next) => {
   try {
-    let token = null;
+    const token = extractToken(req);
 
-    if (req.cookies && req.cookies.access_token) {
-      token = req.cookies.access_token;
-    } else if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith('Bearer ')
-    ) {
-      token = req.headers.authorization.split(' ')[1];
-    }
-
-    if (!token) {
+    if (!token || token === 'null' || token === 'undefined') {
       return next(ApiError.unauthorized('Authentication token is required'));
     }
 
@@ -54,17 +67,9 @@ const authenticate = async (req, res, next) => {
 
 const optionalAuth = async (req, res, next) => {
   try {
-    let token = null;
-    if (req.cookies && req.cookies.access_token) {
-      token = req.cookies.access_token;
-    } else if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith('Bearer ')
-    ) {
-      token = req.headers.authorization.split(' ')[1];
-    }
+    const token = extractToken(req);
 
-    if (!token) {
+    if (!token || token === 'null' || token === 'undefined') {
       return next();
     }
 
