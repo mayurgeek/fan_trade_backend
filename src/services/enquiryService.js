@@ -9,16 +9,27 @@ const config = require('../config');
 class EnquiryService {
   async generateEnquiryNo(transaction) {
     const year = new Date().getFullYear();
-    // Count enquiries created this year for readable sequence
-    const startOfYear = new Date(year, 0, 1);
-    const count = await Enquiry.count({
-      where: {
-        created_at: { [Op.gte]: startOfYear },
-      },
+    const prefix = `ENQ-${year}-`;
+
+    // Serialise number allocation within this transaction. Counting rows is not
+    // safe: imported/deleted records can leave gaps, and concurrent requests can
+    // otherwise receive the same reference number.
+    await sequelize.query('SELECT pg_advisory_xact_lock(hashtext(:lockKey))', {
+      replacements: { lockKey: `enquiry-number-${year}` },
       transaction,
     });
 
-    const seq = String(count + 1).padStart(6, '0');
+    const latestEnquiry = await Enquiry.findOne({
+      where: { enquiry_no: { [Op.like]: `${prefix}%` } },
+      order: [['enquiry_no', 'DESC']],
+      attributes: ['enquiry_no'],
+      transaction,
+    });
+
+    const latestSeq = latestEnquiry
+      ? Number.parseInt(latestEnquiry.enquiry_no.slice(prefix.length), 10) || 0
+      : 0;
+    const seq = String(latestSeq + 1).padStart(6, '0');
     return `ENQ-${year}-${seq}`;
   }
 
